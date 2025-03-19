@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.Json;
 
 namespace TaskManager
@@ -97,6 +97,7 @@ namespace TaskManager
                 Console.WriteLine($"Priority: {task.Priority}");
                 Console.WriteLine($"Status: {(task.IsComplete ? "✅ Complete" : "⏳ Pending")}");
                 Console.WriteLine($"Created: {task.CreatedAt:g}");
+                Console.WriteLine($"Tags: {string.Join(", ", task.Tags)}");
 
                 if (task.History.Any())
                 {
@@ -148,6 +149,13 @@ namespace TaskManager
             task.DueDate = GetValidDate() ?? DateTime.Now;
             task.Priority = GetPriorityInput() ?? Priority.Low;
 
+            Console.Write("Add tags (comma-separated): ");
+            var tagsInput = Console.ReadLine();
+            if (!string.IsNullOrEmpty(tagsInput))
+            {
+                task.Tags = tagsInput.Split(',').Select(t => t.Trim()).ToList();
+            }
+
             task.History.Add($"{DateTime.Now:g} - Task created");
             tasks.Add(task);
             ShowSuccess("Task added successfully!");
@@ -161,7 +169,18 @@ namespace TaskManager
             var task = FindTaskById();
             if (task == null) return;
 
-            Console.WriteLine("Leave field blank to keep current value\n");
+            Console.WriteLine($"Tags: {string.Join(", ", task.Tags)}");
+            Console.WriteLine("Leave field blank to keep current value");
+
+            // Edit Tags
+            Console.Write("New Tags (comma-separated): ");
+            var newTagsInput = Console.ReadLine();
+            if (!string.IsNullOrEmpty(newTagsInput))
+            {
+                var newTags = newTagsInput.Split(',').Select(t => t.Trim()).ToList();
+                task.History.Add($"{DateTime.Now:g} - Tags updated");
+                task.Tags = newTags;
+            }
 
             // Edit Title
             var newTitle = GetValidInput($"Current Title: {task.Title}\nNew Title: ", "Title cannot be empty!", true);
@@ -234,6 +253,7 @@ namespace TaskManager
             Console.WriteLine("1. Title and Description");
             Console.WriteLine("2. Status (Pending/Complete)");
             Console.WriteLine("3. Priority (Low/Medium/High)");
+            Console.WriteLine("4. Tags");
             Console.Write("Enter your choice: ");
 
             if (int.TryParse(Console.ReadLine(), out int searchOption))
@@ -265,6 +285,9 @@ namespace TaskManager
                         {
                             ShowError("Invalid priority. Use 'low', 'medium', or 'high'.");
                         }
+                        break;
+                    case 4:
+                        results = tasks.Where(t => t.Tags.Any(tag => tag.ToLower().Contains(term ?? string.Empty))).ToList();
                         break;
                     default:
                         ShowError("Invalid search option.");
@@ -444,5 +467,6 @@ namespace TaskManager
         public bool IsComplete { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public List<string> History { get; set; } = new List<string>();
+        public List<string> Tags { get; set; } = new List<string>();
     }
 }
